@@ -7,12 +7,18 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import UserRegisterSerializer, CustomTokenObtainPairSerializer, UserSerializer
 
 
+# ========================================================
+# Service Health check
+# ========================================================
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
         return Response({'service': 'user-service', 'status': 'ok'})
 
 
+# ========================================================
+# Auth
+# ========================================================
 class UserRegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = UserRegisterSerializer
