@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 
     # Third Party Apps
     'rest_framework',
+    'django_filters',
 
     # Service Apps
     'catalog.apps.CatalogConfig',
