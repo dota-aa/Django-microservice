@@ -5,9 +5,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.cache import cache
+from django.db import transaction
 
 from .models import Category, Product
 from .serializers import CategorySerializer, ProductSerializer
+from .messaging.rabbitmq import publish_even
 
 
 # ========================================================
@@ -56,8 +58,22 @@ class ProductViewSet(viewsets.ModelViewSet):
     ]
 
     def perform_create(self, serializer):
-        serializer.save()
+        product = serializer.save()
         cache.delete('product:product_list')
+
+        def publish_product_created():
+            """
+            A wrapper for publish_event func that allows to use on_commit transaction
+            """
+            publish_even("product.created", {
+                "id": product.id,
+                "name": product.name,
+                "description": product.description,
+                "price": str(product.price),
+                "stock": product.stock
+            })
+
+        transaction.on_commit(publish_product_created)
 
     def perform_update(self, serializer):
         product = serializer.save()
