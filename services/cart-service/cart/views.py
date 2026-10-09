@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from django.core.cache import cache
+from .client.catalog import CatalogServiceError, get_product
 
 
 # only for showcase, not using them in code for now
@@ -94,6 +95,18 @@ class CartItemView(APIView):
 
         if quantity <= 0:
             return Response(data={"detail": "quantity must be greater than zero"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # check if product is valid
+        try:
+            product = get_product(product_id)
+        except CatalogServiceError as exc:
+            return Response(data={"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        if not product:
+            return Response(data={"detail": "Product Does not exists."}, status=status.HTTP_404_NOT_FOUND)
+
+        if not product['is_active']:
+            return Response(data={"detail": "Product is not active"}, status=status.HTTP_400_BAD_REQUEST)
 
         key = get_cart_key(user_id)
         cart = cache.get(key, {"items": []})

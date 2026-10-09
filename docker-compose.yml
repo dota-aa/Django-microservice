@@ -92,11 +92,14 @@ services:
     build:
       context: ./services/cart-service
     container_name: shop-cart-service
+    env_file:
+      - ./services/cart-service/.env
     command: python manage.py runserver 0.0.0.0:8002
     ports:
       - "8002:8002"
     depends_on:
       - redis
+      - catalog-service
 
 volumes:
   user_postgres_data:
