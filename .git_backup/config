@@ -1,0 +1,11 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[user]
+	username = dota-aa
+	email = alireza808590100@gmail.com
+[remote "origin"]
+	url = git@github.com:dota-aa/Django-microservice.git
+	fetch = +refs/heads/*:refs/remotes/origin/*

@@ -2,7 +2,7 @@ from typing import TypedDict, List
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from django.core.cache import cache
 from .client.catalog import CatalogServiceError, get_product
@@ -59,8 +59,10 @@ class CartView(APIView):
     """
     Show a user's cart
     """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        user_id = get_user_id(request)
+        user_id = request.user.id
 
         if not user_id:
             return Response(data={"detail": "X-User-ID header is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -75,8 +77,10 @@ class CartItemView(APIView):
     """
     Add new item to cart. if item already exists in cart, add quantities.
     """
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        user_id = get_user_id(request)
+        user_id = request.user.id
 
         if not user_id:
             return Response(data={"detail": "X-User-ID header is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -124,11 +128,13 @@ class CartItemView(APIView):
 
 
 class CartItemDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def patch(self, request, product_id):
         """
         Update quantity of an item of cart
         """
-        user_id = get_user_id(request)
+        user_id = request.user.id
 
         if not user_id:
             return Response(data={"detail": "x-User-ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -160,7 +166,7 @@ class CartItemDetailView(APIView):
         """
         Delete an item of a user's cart
         """
-        user_id = get_user_id(request)
+        user_id = request.user.id
 
         if not user_id:
             return Response(data={"detail": "x-User-ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -178,8 +184,10 @@ class CartClearView(APIView):
     """
     Delete all items from user's cart
     """
+    permission_classes = [IsAuthenticated]
+
     def delete(self, request):
-        user_id = get_user_id(request)
+        user_id = request.user.id
 
         if not user_id:
             return Response(data={"detail": "x-User-ID is required."}, status=status.HTTP_400_BAD_REQUEST)
