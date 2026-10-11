@@ -153,7 +153,6 @@ REST_FRAMEWORK = {
 }
 
 
-from datetime import timedelta
 SIMPLE_JWT = {
     "SIGNING_KEY": os.getenv('JWT_SIGNING_KEY'),
     "ALGORITHM": "HS256",
