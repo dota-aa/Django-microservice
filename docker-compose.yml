@@ -31,6 +31,16 @@ services:
     ports:
       - "6379:6379"
 
+  user-db:
+    image: postgres:16
+    container_name: shop-user-db
+    environment:
+      POSTGRES_DB: ${USER_DB_NAME}
+      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+
   user-service:
     build:
       context: ./services/user-service
@@ -42,16 +52,6 @@ services:
       - ./services/user-service/.env
     depends_on: 
       - user-db
-
-  user-db:
-    image: postgres:16
-    container_name: shop-user-db
-    environment:
-      POSTGRES_DB: ${USER_DB_NAME}
-      POSTGRES_USER: ${USER_DB_USER}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
-    volumes:
-      - user_postgres_data:/var/lib/postgresql/data
 
   catalog-service:
     build:
@@ -123,6 +123,19 @@ services:
       - "8003:8003"
     depends_on:
       - inventory-db
+
+  inventory-worker:
+    build:
+      context: ./services/inventory-service
+    container_name: shop-inventory-worker
+    env_file:
+      - ./services/inventory-service/.env
+    command: python manage.py consume_catalog_events
+    depends_on:
+      - inventory-db
+      - rabbitmq
+    restart: unless-stopped
+
 
 volumes:
   user_postgres_data:

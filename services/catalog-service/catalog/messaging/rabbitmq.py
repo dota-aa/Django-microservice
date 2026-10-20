@@ -3,11 +3,13 @@ import pika
 
 
 RABBITMQ_HOST = "rabbitmq"
+RABBITMQ_PORT = 5672
+
 EXCHANGE_NAME = "catalog.events"
 
 
 def publish_even(event_type, data):
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT))
     channel = connection.channel()
 
     channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type="topic", durable=True)
