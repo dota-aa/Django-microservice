@@ -1,11 +1,15 @@
 from typing import TypedDict, List
+
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
+
 from django.core.cache import cache
+
 from .client.catalog import CatalogServiceError, get_product
+from .client.inventory import InventoryServiceError, get_inventory_item
 
 
 # only for showcase, not using them in code for now
@@ -29,6 +33,10 @@ class Cart(TypedDict):
     items: List[CartItem]
 
 
+
+# ========================================================
+# helper functions
+# ========================================================
 def get_user_id(request: Request) -> int | None:
     user_id = request.headers.get('X-User-ID')
     if user_id is None:
@@ -38,6 +46,25 @@ def get_user_id(request: Request) -> int | None:
 
 def get_cart_key(user_id: int) -> str:
     return f'cart:user:{user_id}'
+
+
+def validate_available_stock(request: Request, product_id: int, requested_quantity: int) -> None | Response:
+    """
+    Checks if returned data from inventory-service have requested quantity
+    """
+    try:
+        inventory_item = get_inventory_item(product_id, authorization=request.headers.get("Authorization"))
+    except InventoryServiceError:
+        return Response({"detail": "Inventory Service is unavailable."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    if inventory_item is None:
+        return Response({"detail": "Inventory has not been initialized for this product."},
+                        status=status.HTTP_409_CONFLICT)
+
+    if requested_quantity > inventory_item["quantity"]:
+        return Response({"detail": "Requested quantity exceeds available stock."}, status=status.HTTP_409_CONFLICT)
+
+    return None
 
 
 # ========================================================
@@ -115,13 +142,19 @@ class CartItemView(APIView):
         key = get_cart_key(user_id)
         cart = cache.get(key, {"items": []})
 
-        for item in cart['items']:
-            if item['product_id'] == product_id:
-                item['quantity'] += quantity
-                break
+        existing_item = next((item for item in cart["items"] if item["product_id"] == product_id), None)
+        current_quantity = existing_item["quantity"] if existing_item else 0
 
+        requested_total = current_quantity + quantity
+        stock_error = validate_available_stock(request, product_id, requested_total)
+
+        if stock_error is not None:
+            return stock_error
+
+        if existing_item:
+            existing_item["quantity"] = requested_total
         else:
-            cart['items'].append({"product_id": product_id, "quantity": quantity})
+            cart["items"].append({"product_id":product_id, "quantity":quantity})
 
         cache.set(key, cart)
         return Response(cart, status=status.HTTP_201_CREATED)
@@ -155,12 +188,20 @@ class CartItemDetailView(APIView):
         key = get_cart_key(user_id)
         cart = cache.get(key, default={"items": []})
 
-        for item in cart['items']:
-            if item['product_id'] == product_id:
-                item['quantity'] = quantity
-                cache.set(key, cart)
-                return Response(data=cart)
-        return Response(data={"detail": "Product is not in cart"}, status=status.HTTP_404_NOT_FOUND)
+        existing_item = next((item for item in cart["items"] if item["product_id"] == product_id), None)
+
+        if existing_item is None:
+            return Response({"detail": "Product is not in cart."}, status=status.HTTP_404_NOT_FOUND)
+
+        if quantity > existing_item["quantity"]:
+            stock_error = validate_available_stock(request, product_id, quantity)
+
+            if stock_error is not None:
+                return stock_error
+
+        existing_item["quantity"] = quantity
+        cache.set(key, cart)
+        return Response(cart)
 
     def delete(self, request, product_id):
         """
