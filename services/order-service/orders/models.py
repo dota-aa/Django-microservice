@@ -46,3 +46,6 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f'{self.product_name} X {self.quantity} for order {self.order}'
+
+    def sub_total(self):
+        return self.quantity * self.unit_price
