@@ -15,7 +15,7 @@ class Order(models.Model):
     idempotency_key = models.CharField(max_length=128)
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.PROCESSING)
     total_amount = models.IntegerField(default=0)
-    failer_reason = models.TextField(blank=True)
+    failure_reason = models.TextField(blank=True)
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 
@@ -47,5 +47,6 @@ class OrderItem(models.Model):
     def __str__(self):
         return f'{self.product_name} X {self.quantity} for order {self.order}'
 
-    def sub_total(self):
+    @property
+    def subtotal(self):
         return self.quantity * self.unit_price

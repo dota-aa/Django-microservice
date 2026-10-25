@@ -63,7 +63,7 @@ def _prepare_order_items(quantities: dict, authorization: str) -> list:
             raise CheckOutError(f"Product {product_id} is not active.", 400)
 
         price = product.get('price')
-        if not price.is_finite() and price < 0:
+        if price < 0:
             raise CheckOutError(f"Product {product_id} has an invalid price", 502)
 
         name = product.get('name')
@@ -79,9 +79,8 @@ def _prepare_order_items(quantities: dict, authorization: str) -> list:
     return prepared
 
 
-
 def _create_order(customer_id, idempotency_key, prepared):
-    total = sum(item['unit_price'] * prepared['quantity'] for item in prepared)
+    total = sum(item['unit_price'] * item['quantity'] for item in prepared)
 
     try:
         with transaction.atomic():
@@ -117,7 +116,7 @@ def _create_order(customer_id, idempotency_key, prepared):
         raise # it will raise the last error (integrity error)
 
 
-def _compensate_reservation(order, authorization):
+def _compensate_reservations(order, authorization):
     """
     A simple compensation func to release stock in case checkout fails at any point.
     """
@@ -182,7 +181,7 @@ def checkout(customer_id, authorization, idempotency_key):
 
     except InventoryReservationRejected as exc:
         _mark_order_failed(order, authorization, str(exc))
-        raise CheckoutError(str(exc), 409) from exc
+        raise CheckOutError(str(exc), 409) from exc
 
     except DownstreamUnavailable as exc:
         _mark_order_failed(order, authorization, str(exc))

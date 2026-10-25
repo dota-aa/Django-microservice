@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 
 from .models import Order
 from .serializers import OrderSerializer
-from .services import CheckoutError, checkout
+from .services import CheckOutError, checkout
 
 
 class HealthCheckView(APIView):
@@ -29,7 +29,7 @@ class CheckoutView(APIView):
 
         try:
             order, created = checkout(customer_id=request.user.id, authorization=authorization, idempotency_key=idempotency_key)
-        except CheckoutError as exc:
+        except CheckOutError as exc:
             return Response({"detail": exc.detail}, status=exc.status_code)
 
         if not created and order.status == Order.Status.PROCESSING:
