@@ -35,6 +35,7 @@ INSTALLED_APPS = [
 
     # Third Party Apps
     'rest_framework',
+    'drf_spectacular',
 
     # Service Apps
     'users.apps.UsersConfig',
@@ -138,7 +139,8 @@ MAILERS = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 
@@ -148,4 +150,12 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "SIGNING_KEY": os.getenv('JWT_SIGNING_KEY'),
     "ALGORITHM": "HS256",
+}
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'User service API',
+    'DESCRIPTION': 'User service api guide',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
